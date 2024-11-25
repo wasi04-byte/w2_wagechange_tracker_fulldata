@@ -26,7 +26,7 @@ employee_census_df.columns = employee_census_df.columns.str.replace(r'\s+', ' ',
 employee_census_df['Employee ID'] = employee_census_df['Employee ID'].astype(str)
 
 # Load data (assuming the data preparation code is already processed as per the original code)
-wage_report_file = 'wage_report_from_dec23.xlsx'
+wage_report_file = 'wage_report_from_jan23_present.xlsx'
 
 # Read the first 10 rows to manually process headers (rows 7-10 are index 6-9 in zero-based indexing)
 header_rows = pd.read_excel(wage_report_file, nrows=10)
@@ -52,7 +52,14 @@ columns_to_keep = [
     'Client ID',
      'Employee Name',
      'Employee ID',
+     'Employee Status',
+     'Insperity Client Name',
+     'Insperity Hire Date',
      'Job Title',
+     'Job Category',
+     'Job Function',
+     'Supervisor Name',
+     'Payroll Type',
      'Pay Date',
      'Period Begin Date',
      'Period End Date',
@@ -102,9 +109,9 @@ wage_report_important_columns_df["MM/YYYY Pay Only"] = wage_report_important_col
 
 # Filter data by Regular Payroll Type
 wage_report_regular_payroll_df = wage_report_important_columns_df
-# wage_report_regular_payroll_df = wage_report_important_columns_df[
-#     wage_report_important_columns_df["Payroll Type"] == "Regular"
-# ]
+wage_report_regular_payroll_df = wage_report_important_columns_df[
+    wage_report_important_columns_df["Payroll Type"] == "Regular"
+]
 
 # Streamlit App
 
@@ -175,13 +182,13 @@ if employee_name_input:
 
 # Other Filters
 job_titles = filtered_df["Job Title"].unique()
-#job_functions = filtered_df["Job Function"].unique()
-#job_categories = filtered_df["Job Category"].unique()
-client_id = filtered_df["Client ID"].unique()
+job_functions = filtered_df["Job Function"].unique()
+job_categories = filtered_df["Job Category"].unique()
+client_id = filtered_df["Insperity Client Name"].unique()
 
 selected_job_title = st.sidebar.selectbox("Select Job Title", options=["All"] + list(job_titles))
-# selected_job_function = st.sidebar.selectbox("Select Job Function", options=["All"] + list(job_functions))
-# selected_job_category = st.sidebar.selectbox("Select Job Category", options=["All"] + list(job_categories))
+selected_job_function = st.sidebar.selectbox("Select Job Function", options=["All"] + list(job_functions))
+selected_job_category = st.sidebar.selectbox("Select Job Category", options=["All"] + list(job_categories))
 selected_client_id = st.sidebar.selectbox("Select Client ID", options=["All"] + list(client_id))
 
 # Apply additional filters
@@ -197,14 +204,14 @@ if "All" not in selected_states_state2:
 if selected_job_title != "All":
     filtered_df = filtered_df[filtered_df["Job Title"] == selected_job_title]
 
-# if selected_job_function != "All":
-#     filtered_df = filtered_df[filtered_df["Job Function"] == selected_job_function]
+if selected_job_function != "All":
+    filtered_df = filtered_df[filtered_df["Job Function"] == selected_job_function]
 
-# if selected_job_category != "All":
-#     filtered_df = filtered_df[filtered_df["Job Category"] == selected_job_category]
+if selected_job_category != "All":
+    filtered_df = filtered_df[filtered_df["Job Category"] == selected_job_category]
 
 if selected_client_id != "All":
-    filtered_df = filtered_df[filtered_df["Client ID"] == selected_client_id]
+    filtered_df = filtered_df[filtered_df["Insperity Client Name"] == selected_client_id]
 
 # Add a new sidebar filter for selecting the target variable
 target_variable_options = [
