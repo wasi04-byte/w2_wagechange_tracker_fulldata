@@ -5,6 +5,26 @@ import seaborn as sns
 import matplotlib
 import openpyxl
 
+# Load Provider Master List Data
+
+provider_master_list_file = "Providers Master List - 20241120.csv"
+
+provider_master_list_df = pd.read_csv(provider_master_list_file)
+
+# Specify the path to your Excel file
+employee_census_file_path = 'W-2 Employee Census_Currently Active.xlsx'
+
+# Load rows 7 to 270 (Excel row index is 1-based, but pandas is 0-based)
+# skiprows=6 will skip the first 6 rows (i.e., rows 1 to 6)
+# nrows=264 will read the next 264 rows (i.e., rows 7 to 270)
+employee_census_df = pd.read_excel(employee_census_file_path, skiprows=5, nrows=207, header=1) # 
+
+# Replace multiple spaces with a single space, if needed
+employee_census_df.columns = employee_census_df.columns.str.replace(r'\s+', ' ', regex=True).str.strip()
+
+# Convert 'Employee ID' column to string (text)
+employee_census_df['Employee ID'] = employee_census_df['Employee ID'].astype(str)
+
 # Load data (assuming the data preparation code is already processed as per the original code)
 wage_report_file = 'wage_report_from_dec23.xlsx'
 
@@ -64,6 +84,17 @@ wage_report_important_columns_df = wage_report_important_columns_df.dropna(
     subset=["Period End Date"]
 )
 
+### ******************* Assigning STATE to Wage Report ****************
+
+wage_report_important_columns_df['State from Census'] = wage_report_important_columns_df['Employee ID'].map(employee_census_df.set_index('Employee ID')['Default Tax Work State'])
+
+
+provider_master_list_df['FP&A Name'] = provider_master_list_df['FP&A Name'].str.upper()
+mapper = provider_master_list_df.drop_duplicates(subset='FP&A Name').set_index('FP&A Name')['State']
+wage_report_important_columns_df['State from Provider Master List'] = wage_report_important_columns_df['Employee Name'].map(mapper)
+
+### *********************************************************************
+
 # Create 'MM/YYYY Pay Only' period column as datetime
 wage_report_important_columns_df["MM/YYYY Pay Only"] = wage_report_important_columns_df[
     "Period End Date"
@@ -95,6 +126,28 @@ selected_date_range = st.sidebar.slider(
     format="MMM YYYY",  # Display format
 )
 
+
+###  *********************** Filtering by State *****************
+
+# Sidebar filter for "State" column
+unique_states_state = wage_report_regular_payroll_df['State from Census'].dropna().unique()
+selected_states_state = st.sidebar.multiselect(
+    "Select State(s) for 'State from Census' column",
+    options=["All"] + list(unique_states_state),
+    default="All",
+)
+
+# Sidebar filter for "State2" column
+unique_states_state2 = wage_report_regular_payroll_df['State from Provider Master List'].dropna().unique()
+selected_states_state2 = st.sidebar.multiselect(
+    "Select State(s) for 'State from Provider Master List' column",
+    options=["All"] + list(unique_states_state2),
+    default="All",
+)
+
+### **************************************************************
+
+
 # Filter DataFrame by selected date range
 filtered_df = wage_report_regular_payroll_df[
     (wage_report_regular_payroll_df["MM/YYYY Pay Only"].dt.date >= selected_date_range[0])
@@ -109,6 +162,12 @@ employee_name_input = st.sidebar.multiselect(
     default=None,
     help="Start typing to see employee name suggestions",
 )
+
+
+
+
+
+
 
 # Apply Employee Name filter if any names are selected
 if employee_name_input:
@@ -126,6 +185,15 @@ selected_job_title = st.sidebar.selectbox("Select Job Title", options=["All"] + 
 selected_client_id = st.sidebar.selectbox("Select Client ID", options=["All"] + list(client_id))
 
 # Apply additional filters
+
+# Filter for "State" column
+if "All" not in selected_states_state:
+    filtered_df = filtered_df[filtered_df["State from Census"].isin(selected_states_state)]
+
+# Filter for "State2" column
+if "All" not in selected_states_state2:
+    filtered_df = filtered_df[filtered_df["State from Provider Master List"].isin(selected_states_state2)]
+
 if selected_job_title != "All":
     filtered_df = filtered_df[filtered_df["Job Title"] == selected_job_title]
 
@@ -199,18 +267,3 @@ ax.tick_params(axis="x", rotation=45)
 
 # Show the plot in the Streamlit app
 st.pyplot(fig)
-
-print("pandas version:", pd.__version__)
-print("streamlit version:", st.__version__)
-print("matplotlib version:", matplotlib.__version__)
-print("seaborn version:", sns.__version__)
-print("openpyxl version:", openpyxl.__version__)
-
-
-# cd "C:/Users/MasnunAhmedWasi/OneDrive - ALTEA Healthcare/Dashboard Automations/HR Data"
-
-# cd "D:/Personal/OneDrive/ALTEA/Dashboard Automations/HR Data/Wage Change Tracker/"
-
-# streamlit run "streamlit_w2_moredata_lessfilter_wage_change_tracker_20241124_v14.py"
-
-# https://w2-pay-change-tracker-moredata-lessfilter-v1.streamlit.app/
