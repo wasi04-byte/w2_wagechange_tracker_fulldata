@@ -116,7 +116,7 @@ wage_report_regular_payroll_df = wage_report_important_columns_df[
 # Streamlit App
 
 # Title
-st.title("Payroll Cost Over Time")
+st.title("Labor Costs Over Time")
 
 # Sidebar Time Slicer
 st.sidebar.header("Filters")
